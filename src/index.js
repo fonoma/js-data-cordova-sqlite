@@ -55,7 +55,7 @@ function processRelationField(resourceConfig, query, field, criteria, joinedTabl
                 };
                 let subQueryTable = getTable(relationResourceConfig);
                 let subQuery = squel.select().from(subQueryTable);
-                subQuery = this.filterQuery(relationResourceConfig, existsParams, subQuery)
+                subQuery = this.__filterQuery(relationResourceConfig, existsParams, subQuery)
                     .where(`${getTable(relationResourceConfig)}.${relation.foreignKey} == ${getTable(localResourceConfig)}.${localResourceConfig.idAttribute}`)
                 if (Object.keys(criteria).some(k => k.indexOf('|') > -1)) {
                     query = query.where(subQuery);
@@ -271,7 +271,7 @@ class DSCordovaSQLiteAdapter {
                 };
 
                 //Use current transaction if it exists
-                if (tx){
+                if (tx) {
                     tx.executeSql(query, [], successCallback, errorCallback);
                 } else {
                     this.db.transaction((tx) => {
@@ -291,34 +291,34 @@ class DSCordovaSQLiteAdapter {
         options.with = options.with || [];
 
         let query = squel.select().from(table);
-        query = this.filterQuery(resourceConfig, params, query);
+        query = this.__filterQuery(resourceConfig, params, query);
         let queryStr = query.toString();
         //TODO Remove
         console.log(`FindAll SQL: ${queryStr}`);
 
         return new Promise((resolve, reject) => {
-           if (this.db) {
+            if (this.db) {
                 this.db.transaction((tx) => {
                     tx.executeSql(queryStr, [],
                         (tx, rs) => {
                             items = [];
-                            for (let i=0; i<rs.rows.length; i++) {
+                            for (let i = 0; i < rs.rows.length; i++) {
                                 items.push(rs.rows.item(i));
                             }
                             loadWithRelations.call(this, items, resourceConfig, options)
-                            .then(() => {
-                                return items.map((value) => this.__denormalizeAttributes(value));
-                            })
-                            .then((denormalizedItems) => resolve(denormalizedItems));
+                                .then(() => {
+                                    return items.map((value) => this.__denormalizeAttributes(value));
+                                })
+                                .then((denormalizedItems) => resolve(denormalizedItems));
                         },
                         (tx, error) => {
                             resolve([]);
                             return false;
                         })
                 });
-           } else {
-               reject(new Error('Cordova SQLite plugin is not loaded!'));
-           }
+            } else {
+                reject(new Error('Cordova SQLite plugin is not loaded!'));
+            }
         });
     }
 
@@ -358,7 +358,8 @@ class DSCordovaSQLiteAdapter {
                                 tx.executeSql(alterQuery);
 
                                 //Try again to insert and retrieve the row
-                                tx.executeSql(query, [], ()=>{}, errorCallback);
+                                tx.executeSql(query, [], ()=> {
+                                }, errorCallback);
                                 tx.executeSql(selectQuery, [], successCallback);
                             }
                             return false;
@@ -380,7 +381,7 @@ class DSCordovaSQLiteAdapter {
         });
     }
 
-    update (resourceConfig, id, attrs, options) {
+    update(resourceConfig, id, attrs, options) {
         let table = getTable(resourceConfig);
         attrs = this.__normalizeAttributes(resourceConfig, attrs);
 
@@ -409,14 +410,15 @@ class DSCordovaSQLiteAdapter {
                         let errorCallback = (tx, error) => {
                             //If the table doesn't have one of the columns, add it
                             if (error.message.indexOf('no such column') != -1
-                            || error.message.indexOf('has no column named') != -1) {
+                                || error.message.indexOf('has no column named') != -1) {
                                 let words = error.message.split(' ');
                                 let columnName = words[words.length - 1];
                                 let alterQuery = `ALTER TABLE ${table} ADD COLUMN ${columnName}`;
                                 tx.executeSql(alterQuery);
 
                                 //Try again to update/insert and retrieve the row
-                                tx.executeSql(updateQuery, [], ()=>{}, errorCallback);
+                                tx.executeSql(updateQuery, [], ()=> {
+                                }, errorCallback);
                                 tx.executeSql(insertQuery, [], successCallback, errorCallback);
                             }
                             return false;
@@ -447,7 +449,7 @@ class DSCordovaSQLiteAdapter {
         //First, we get the ROWID of every row thatis going to be updated
         let query = squel.select().from(table);
         //let query = squel.update().table(table).setFields(attrs);
-        query = this.filterQuery(resourceConfig, params, query);
+        query = this.__filterQuery(resourceConfig, params, query);
         let queryStr = query.toString();
         //TODO Remove
         console.log(`UpdateAll SQL: ${queryStr}`);
@@ -512,11 +514,11 @@ class DSCordovaSQLiteAdapter {
         });
     }
 
-    destroyAll (resourceConfig, params, options) {
+    destroyAll(resourceConfig, params, options) {
         let table = getTable(resourceConfig);
 
         let query = squel.delete().from(table);
-        query = this.filterQuery(resourceConfig, params, query);
+        query = this.__filterQuery(resourceConfig, params, query);
         let queryStr = query.toString();
         //TODO Remove
         console.log(`DestroyAll SQL: ${queryStr}`);
@@ -540,7 +542,44 @@ class DSCordovaSQLiteAdapter {
         });
     }
 
-    filterQuery (resourceConfig, params, query) {
+    createIndex(resourceConfig, name, params) {
+        let table = getTable(resourceConfig);
+        let suffix = Math.floor(Math.random()*10);
+
+        let columnsArr = [];
+        Object.keys(params).forEach((key) => {
+            let str = key;
+            let value = params[key];
+            if (typeof value === 'string'){
+                let upperValue = value.toUpperCase();
+                if (upperValue === 'ASC' || upperValue === 'DESC') {
+                    str = `${str} ${value}`;
+                }
+            }
+            columnsArr.push(str);
+        });
+        let columns = columnsArr.join(', ');
+
+        let query = `CREATE INDEX IF NOT EXISTS ${name} ON ${table} (${columns})`;
+        return new Promise((resolve, reject) => {
+            if (this.db) {
+                this.db.transaction((tx) => {
+                        tx.executeSql(query);
+                    },
+                    (error) => {
+                        reject(new Error(error.message));
+                        return false;
+                    },
+                    () => resolve());
+            } else {
+                reject(new Error('Cordova SQLite plugin is not loaded!'));
+            }
+        });
+
+    }
+
+
+    __filterQuery(resourceConfig, params, query) {
         let joinedTables = [];
 
         params = params || {};
@@ -582,7 +621,7 @@ class DSCordovaSQLiteAdapter {
 
                 if (field) {
                     forOwn(criteria, (v, op) => {
-                        if (typeof v === 'boolean'){
+                        if (typeof v === 'boolean') {
                             v = v ? 'true' : 'false';
                         }
 
@@ -617,8 +656,8 @@ class DSCordovaSQLiteAdapter {
                             query = query.where(`${field} LIKE ?`, v);
                         } else if (op === '|like') {
                             query = query.where(
-                              squel.expr()
-                                .or(`${field} LIKE ?`, v)
+                                squel.expr()
+                                    .or(`${field} LIKE ?`, v)
                             );
                         } else if (op === '|==' || op === '|===') {
                             if (v === null) {
@@ -735,15 +774,15 @@ class DSCordovaSQLiteAdapter {
         return tx.executeSql(createSyntax);
     }
 
-    __normalizeAttributes(resourceConfig, attrs){
+    __normalizeAttributes(resourceConfig, attrs) {
         let processed = deepMixIn({}, attrs);
         processed = removeCircular(omit(processed, resourceConfig.relationFields || []));
 
         Object.keys(processed).forEach((key) => {
             let value = processed[key];
-            if (typeof value === 'boolean' || typeof value === 'object' || Array.isArray(value)){
+            if (typeof value === 'boolean' || typeof value === 'object' || Array.isArray(value)) {
                 processed[key] = JSON.stringify(value);
-            } else if (value === undefined){
+            } else if (value === undefined) {
                 processed[key] = null;
             }
         });
@@ -763,7 +802,7 @@ class DSCordovaSQLiteAdapter {
         Object.keys(denormalizedItem).forEach((key) => {
             let value = denormalizedItem[key];
             if (value === 'true' || value === 'false'
-                || (typeof value === 'string' && (value.substr(0, 2) === '[{' || value.substr(0, 1) === '{'))){
+                || (typeof value === 'string' && (value.substr(0, 2) === '[{' || value.substr(0, 1) === '{'))) {
                 denormalizedItem[key] = JSON.parse(value);
             }
         });

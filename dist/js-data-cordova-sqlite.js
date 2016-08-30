@@ -123,7 +123,7 @@ module.exports =
 	                var existsParams = _defineProperty({}, relationName + '.' + fieldParts.splice(0).join('.'), criteria);
 	                var subQueryTable = getTable(relationResourceConfig);
 	                var subQuery = _squel2.default.select().from(subQueryTable);
-	                subQuery = this.filterQuery(relationResourceConfig, existsParams, subQuery).where(getTable(relationResourceConfig) + '.' + relation.foreignKey + ' == ' + getTable(localResourceConfig) + '.' + localResourceConfig.idAttribute);
+	                subQuery = this.__filterQuery(relationResourceConfig, existsParams, subQuery).where(getTable(relationResourceConfig) + '.' + relation.foreignKey + ' == ' + getTable(localResourceConfig) + '.' + localResourceConfig.idAttribute);
 	                if (Object.keys(criteria).some(function (k) {
 	                    return k.indexOf('|') > -1;
 	                })) {
@@ -365,7 +365,7 @@ module.exports =
 	            options.with = options.with || [];
 
 	            var query = _squel2.default.select().from(table);
-	            query = this.filterQuery(resourceConfig, params, query);
+	            query = this.__filterQuery(resourceConfig, params, query);
 	            var queryStr = query.toString();
 	            //TODO Remove
 	            console.log('FindAll SQL: ' + queryStr);
@@ -510,7 +510,7 @@ module.exports =
 	            //First, we get the ROWID of every row thatis going to be updated
 	            var query = _squel2.default.select().from(table);
 	            //let query = squel.update().table(table).setFields(attrs);
-	            query = this.filterQuery(resourceConfig, params, query);
+	            query = this.__filterQuery(resourceConfig, params, query);
 	            var queryStr = query.toString();
 	            //TODO Remove
 	            console.log('UpdateAll SQL: ' + queryStr);
@@ -572,7 +572,7 @@ module.exports =
 	            var table = getTable(resourceConfig);
 
 	            var query = _squel2.default.delete().from(table);
-	            query = this.filterQuery(resourceConfig, params, query);
+	            query = this.__filterQuery(resourceConfig, params, query);
 	            var queryStr = query.toString();
 	            //TODO Remove
 	            console.log('DestroyAll SQL: ' + queryStr);
@@ -594,9 +594,47 @@ module.exports =
 	            });
 	        }
 	    }, {
-	        key: 'filterQuery',
-	        value: function filterQuery(resourceConfig, params, query) {
+	        key: 'createIndex',
+	        value: function createIndex(resourceConfig, name, params) {
 	            var _this9 = this;
+
+	            var table = getTable(resourceConfig);
+	            var suffix = Math.floor(Math.random() * 10);
+
+	            var columnsArr = [];
+	            Object.keys(params).forEach(function (key) {
+	                var str = key;
+	                var value = params[key];
+	                if (typeof value === 'string') {
+	                    var upperValue = value.toUpperCase();
+	                    if (upperValue === 'ASC' || upperValue === 'DESC') {
+	                        str = str + ' ' + value;
+	                    }
+	                }
+	                columnsArr.push(str);
+	            });
+	            var columns = columnsArr.join(', ');
+
+	            var query = 'CREATE INDEX IF NOT EXISTS ' + name + ' ON ' + table + ' (' + columns + ')';
+	            return new Promise(function (resolve, reject) {
+	                if (_this9.db) {
+	                    _this9.db.transaction(function (tx) {
+	                        tx.executeSql(query);
+	                    }, function (error) {
+	                        reject(new Error(error.message));
+	                        return false;
+	                    }, function () {
+	                        return resolve();
+	                    });
+	                } else {
+	                    reject(new Error('Cordova SQLite plugin is not loaded!'));
+	                }
+	            });
+	        }
+	    }, {
+	        key: '__filterQuery',
+	        value: function __filterQuery(resourceConfig, params, query) {
+	            var _this10 = this;
 
 	            var joinedTables = [];
 
@@ -634,10 +672,10 @@ module.exports =
 	                                return c.trim();
 	                            });
 	                            field = splitFields.map(function (splitField) {
-	                                return processRelationField.call(_this9, resourceConfig, query, splitField, criteria, joinedTables);
+	                                return processRelationField.call(_this10, resourceConfig, query, splitField, criteria, joinedTables);
 	                            }).join(',');
 	                        } else {
-	                            field = processRelationField.call(_this9, resourceConfig, query, field, criteria, joinedTables);
+	                            field = processRelationField.call(_this10, resourceConfig, query, field, criteria, joinedTables);
 	                        }
 	                    }
 
