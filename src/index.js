@@ -446,13 +446,10 @@ class DSCordovaSQLiteAdapter {
         let table = getTable(resourceConfig);
         attrs = this.__normalizeAttributes(resourceConfig, attrs);
 
-        //First, we get the ROWID of every row thatis going to be updated
-        let query = squel.select().from(table);
-        //let query = squel.update().table(table).setFields(attrs);
+        //First, we get the ROWID of every row that is going to be updated
+        let query = squel.select().from(table).field('ROWID');
         query = this.__filterQuery(resourceConfig, params, query);
         let queryStr = query.toString();
-        //TODO Remove
-        console.log(`UpdateAll SQL: ${queryStr}`);
 
         return new Promise((resolve, reject) => {
             if (this.db) {
@@ -461,16 +458,35 @@ class DSCordovaSQLiteAdapter {
                             (tx, rs) => {
                                 let ids = [];
                                 for (let i = 0; i < rs.rows.length; i++) {
-                                    ids.push(rs.rows.item(i).rowid);
+                                    ids.push(rs.rows.item(i).id.toString());
                                 }
                                 let updateQuery = squel.update()
-                                    .table(table)
-                                    .setFields(attrs)
-                                    .where('ROWID IN ?', ids)
-                                    .toString();
+                                                    .table(table)
+                                                    .setFields(attrs)
+                                                    .where('ROWID IN ?', ids)
+                                                    .toString();
+                                //TODO Remove
+                                console.log(`UpdateAll SQL: ${updateQuery}`);
+
                                 tx.executeSql(updateQuery, [],
                                     (tx, rs) => {
-
+                                        //Fetch all the rows to return them
+                                        let selectQuery = squel.select()
+                                                            .from(table)
+                                                            .where('ROWID IN ?', ids)
+                                                            .toString();
+                                        tx.executeSql(selectQuery, [],
+                                            (tx, rs) => {
+                                                let items = [];
+                                                for (let i = 0; i < rs.rows.length; i++) {
+                                                    items.push(rs.rows.item(i));
+                                                }
+                                                loadWithRelations.call(this, items, resourceConfig, options)
+                                                    .then(() => {
+                                                        return items.map((value) => this.__denormalizeAttributes(value));
+                                                    })
+                                                    .then((denormalizedItems) => resolve(denormalizedItems));
+                                            });
                                         resolve(rs);
                                     });
                             })

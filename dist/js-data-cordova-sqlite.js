@@ -509,13 +509,10 @@ module.exports =
 	            var table = getTable(resourceConfig);
 	            attrs = this.__normalizeAttributes(resourceConfig, attrs);
 
-	            //First, we get the ROWID of every row thatis going to be updated
-	            var query = _squel2.default.select().from(table);
-	            //let query = squel.update().table(table).setFields(attrs);
+	            //First, we get the ROWID of every row that is going to be updated
+	            var query = _squel2.default.select().from(table).field('ROWID');
 	            query = this.__filterQuery(resourceConfig, params, query);
 	            var queryStr = query.toString();
-	            //TODO Remove
-	            console.log('UpdateAll SQL: ' + queryStr);
 
 	            return new Promise(function (resolve, reject) {
 	                if (_this6.db) {
@@ -523,11 +520,28 @@ module.exports =
 	                        tx.executeSql(queryStr, [], function (tx, rs) {
 	                            var ids = [];
 	                            for (var i = 0; i < rs.rows.length; i++) {
-	                                ids.push(rs.rows.item(i).rowid);
+	                                ids.push(rs.rows.item(i).id.toString());
 	                            }
 	                            var updateQuery = _squel2.default.update().table(table).setFields(attrs).where('ROWID IN ?', ids).toString();
-	                            tx.executeSql(updateQuery, [], function (tx, rs) {
+	                            //TODO Remove
+	                            console.log('UpdateAll SQL: ' + updateQuery);
 
+	                            tx.executeSql(updateQuery, [], function (tx, rs) {
+	                                //Fetch all the rows to return them
+	                                var selectQuery = _squel2.default.select().from(table).where('ROWID IN ?', ids).toString();
+	                                tx.executeSql(selectQuery, [], function (tx, rs) {
+	                                    var items = [];
+	                                    for (var _i = 0; _i < rs.rows.length; _i++) {
+	                                        items.push(rs.rows.item(_i));
+	                                    }
+	                                    loadWithRelations.call(_this6, items, resourceConfig, options).then(function () {
+	                                        return items.map(function (value) {
+	                                            return _this6.__denormalizeAttributes(value);
+	                                        });
+	                                    }).then(function (denormalizedItems) {
+	                                        return resolve(denormalizedItems);
+	                                    });
+	                                });
 	                                resolve(rs);
 	                            });
 	                        });
