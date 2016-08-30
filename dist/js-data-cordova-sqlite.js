@@ -419,17 +419,18 @@ module.exports =
 	                                return resolve(item);
 	                            });
 	                        };
-	                        var errorCallback = function errorCallback(tx, rs) {
+	                        var errorCallback = function errorCallback(tx, error) {
 	                            //If the table doesn't have one of the columns, add it
 	                            if (error.message.indexOf('has no column named') != -1) {
 	                                var words = error.message.split(' ');
 	                                var columnName = words[words.length - 1];
 	                                var alterQuery = 'ALTER TABLE ' + table + ' ADD COLUMN ' + columnName;
-	                                tx.executeSql(alterQuery);
-
-	                                //Try again to insert and retrieve the row
-	                                tx.executeSql(query, [], function () {}, errorCallback);
-	                                tx.executeSql(selectQuery, [], successCallback);
+	                                tx.executeSql(alterQuery, [], function (tx, rs) {
+	                                    //Try again to insert and retrieve the row
+	                                    tx.executeSql(query, [], function (tx, rs) {
+	                                        tx.executeSql(selectQuery, [], successCallback);
+	                                    }, errorCallback);
+	                                });
 	                            }
 	                            return false;
 	                        };
@@ -475,11 +476,12 @@ module.exports =
 	                                var words = error.message.split(' ');
 	                                var columnName = words[words.length - 1];
 	                                var alterQuery = 'ALTER TABLE ' + table + ' ADD COLUMN ' + columnName;
-	                                tx.executeSql(alterQuery);
-
-	                                //Try again to update/insert and retrieve the row
-	                                tx.executeSql(updateQuery, [], function () {}, errorCallback);
-	                                tx.executeSql(insertQuery, [], successCallback, errorCallback);
+	                                tx.executeSql(alterQuery, [], function (tx, rs) {
+	                                    //Try again to update/insert and retrieve the row
+	                                    tx.executeSql(updateQuery, [], function (tx, rs) {
+	                                        tx.executeSql(insertQuery, [], successCallback, errorCallback);
+	                                    }, errorCallback);
+	                                });
 	                            }
 	                            return false;
 	                        };

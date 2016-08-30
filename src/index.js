@@ -349,18 +349,18 @@ class DSCordovaSQLiteAdapter {
                                 .then(() => this.__denormalizeAttributes(instance))
                                 .then((item) => resolve(item));
                         };
-                        let errorCallback = (tx, rs) => {
+                        let errorCallback = (tx, error) => {
                             //If the table doesn't have one of the columns, add it
                             if (error.message.indexOf('has no column named') != -1) {
                                 let words = error.message.split(' ');
                                 let columnName = words[words.length - 1];
                                 let alterQuery = `ALTER TABLE ${table} ADD COLUMN ${columnName}`;
-                                tx.executeSql(alterQuery);
-
-                                //Try again to insert and retrieve the row
-                                tx.executeSql(query, [], ()=> {
-                                }, errorCallback);
-                                tx.executeSql(selectQuery, [], successCallback);
+                                tx.executeSql(alterQuery, [], (tx, rs)=> {
+                                    //Try again to insert and retrieve the row
+                                    tx.executeSql(query, [], (tx, rs)=> {
+                                        tx.executeSql(selectQuery, [], successCallback);
+                                    }, errorCallback);
+                                });
                             }
                             return false;
                         };
@@ -414,12 +414,12 @@ class DSCordovaSQLiteAdapter {
                                 let words = error.message.split(' ');
                                 let columnName = words[words.length - 1];
                                 let alterQuery = `ALTER TABLE ${table} ADD COLUMN ${columnName}`;
-                                tx.executeSql(alterQuery);
-
-                                //Try again to update/insert and retrieve the row
-                                tx.executeSql(updateQuery, [], ()=> {
-                                }, errorCallback);
-                                tx.executeSql(insertQuery, [], successCallback, errorCallback);
+                                tx.executeSql(alterQuery, [], (tx, rs) => {
+                                    //Try again to update/insert and retrieve the row
+                                    tx.executeSql(updateQuery, [], (tx, rs)=> {
+                                        tx.executeSql(insertQuery, [], successCallback, errorCallback);
+                                    }, errorCallback);
+                                });
                             }
                             return false;
                         };
