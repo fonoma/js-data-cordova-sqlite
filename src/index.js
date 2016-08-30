@@ -350,11 +350,11 @@ class DSCordovaSQLiteAdapter {
                                 .then((item) => resolve(item));
                         };
                         let errorCallback = (tx, error) => {
-                            //If the table doesn't have one of the columns, add it
+                            //If the table doesn't have one of the columns, add it and regenerate indexes
                             if (error.message.indexOf('has no column named') != -1) {
                                 let words = error.message.split(' ');
                                 let columnName = words[words.length - 1];
-                                let alterQuery = `ALTER TABLE ${table} ADD COLUMN ${columnName}`;
+                                let alterQuery = `ALTER TABLE ${table} ADD COLUMN ${columnName}; REINDEX ${table}`;
                                 tx.executeSql(alterQuery, [], (tx, rs)=> {
                                     //Try again to insert and retrieve the row
                                     tx.executeSql(query, [], (tx, rs)=> {

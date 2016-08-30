@@ -420,11 +420,11 @@ module.exports =
 	                            });
 	                        };
 	                        var errorCallback = function errorCallback(tx, error) {
-	                            //If the table doesn't have one of the columns, add it
+	                            //If the table doesn't have one of the columns, add it and regenerate indexes
 	                            if (error.message.indexOf('has no column named') != -1) {
 	                                var words = error.message.split(' ');
 	                                var columnName = words[words.length - 1];
-	                                var alterQuery = 'ALTER TABLE ' + table + ' ADD COLUMN ' + columnName;
+	                                var alterQuery = 'ALTER TABLE ' + table + ' ADD COLUMN ' + columnName + '; REINDEX ' + table;
 	                                tx.executeSql(alterQuery, [], function (tx, rs) {
 	                                    //Try again to insert and retrieve the row
 	                                    tx.executeSql(query, [], function (tx, rs) {
