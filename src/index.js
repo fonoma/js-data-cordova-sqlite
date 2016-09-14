@@ -384,6 +384,9 @@ class DSCordovaSQLiteAdapter {
     update(resourceConfig, id, attrs, options) {
         let table = getTable(resourceConfig);
         attrs = this.__normalizeAttributes(resourceConfig, attrs);
+        if (!attrs['id']) {
+            attrs['id'] = id;
+        }
 
         let updateQuery =
             squel.update()

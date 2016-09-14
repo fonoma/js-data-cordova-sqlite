@@ -455,6 +455,9 @@ module.exports =
 
 	            var table = getTable(resourceConfig);
 	            attrs = this.__normalizeAttributes(resourceConfig, attrs);
+	            if (!attrs['id']) {
+	                attrs['id'] = id;
+	            }
 
 	            var updateQuery = _squel2.default.update().table(table).setFields(attrs).where(table + '.' + resourceConfig.idAttribute + ' = ?', (0, _lang.toString)(id)).toString();
 	            var insertQuery = _squel2.default.insert().into(table).setFields(attrs).toString();
