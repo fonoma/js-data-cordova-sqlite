@@ -135,7 +135,6 @@ function loadWithRelations(items, resourceConfig, options) {
                         return relatedItems;
                     })
             } else if (def.type === 'hasMany' && def.localKeys) {
-                // TODO: Write test for with: hasMany property with localKeys
                 let localKeys = [];
 
                 if (instance) {
@@ -220,10 +219,12 @@ function loadWithRelations(items, resourceConfig, options) {
 class DSCordovaSQLiteAdapter {
 
     constructor(options) {
-        this.defaults = {
+        const DEFAULT_OPTS = {
             name: 'data.db',
-            location: 'default'
+            location: 'default',
+            verbose: false
         };
+
         options = options || {};
 
         if (options.queryOperators) {
@@ -231,7 +232,7 @@ class DSCordovaSQLiteAdapter {
             delete options.queryOperators;
         }
 
-        deepMixIn(this.defaults, options);
+        this.options = deepMixIn({}, DEFAULT_OPTS, options);
 
         if (window.sqlitePlugin) {
             this.db = window.sqlitePlugin.openDatabase({name: options.name, location: options.location});
@@ -249,8 +250,8 @@ class DSCordovaSQLiteAdapter {
                 .from(table)
                 .where(`${table}.${resourceConfig.idAttribute} = ?`, toString(id))
                 .toString();
-        //TODO Remove
-        console.log(`Find SQL: ${query}`);
+
+        if (this.options.verbose) { console.log(`Find SQL: ${query}`); }
 
         return new Promise((resolve, reject) => {
             if (this.db) {
@@ -293,8 +294,8 @@ class DSCordovaSQLiteAdapter {
         let query = squel.select().from(table);
         query = this.__filterQuery(resourceConfig, params, query);
         let queryStr = query.toString();
-        //TODO Remove
-        console.log(`FindAll SQL: ${queryStr}`);
+
+        if (this.options.verbose) { console.log(`FindAll SQL: ${queryStr}`); }
 
         return new Promise((resolve, reject) => {
             if (this.db) {
@@ -336,8 +337,8 @@ class DSCordovaSQLiteAdapter {
                 .from(table)
                 .where('ROWID = last_insert_rowid()')
                 .toString();
-        //TODO Remove
-        console.log(`Create SQL: ${query}`);
+
+        if (this.options.verbose) { console.log(`Create SQL: ${query}`); }
 
         return new Promise((resolve, reject) => {
             if (this.db) {
@@ -400,8 +401,8 @@ class DSCordovaSQLiteAdapter {
                 .setFields(attrs)
                 .toString();
         insertQuery = insertQuery.replace('INSERT INTO', 'INSERT OR IGNORE INTO');
-        //TODO Remove
-        console.log(`Update SQL: ${updateQuery}`);
+
+        if (this.options.verbose) { console.log(`Update SQL: ${updateQuery}`); }
 
         return new Promise((resolve, reject) => {
             if (this.db) {
@@ -468,8 +469,8 @@ class DSCordovaSQLiteAdapter {
                                                     .setFields(attrs)
                                                     .where('ROWID IN ?', ids)
                                                     .toString();
-                                //TODO Remove
-                                console.log(`UpdateAll SQL: ${updateQuery}`);
+
+                                if (this.options.verbose) { console.log(`UpdateAll SQL: ${updateQuery}`); }
 
                                 tx.executeSql(updateQuery, [],
                                     (tx, rs) => {
@@ -512,8 +513,8 @@ class DSCordovaSQLiteAdapter {
                 .from(table)
                 .where(`${table}.${resourceConfig.idAttribute} = ?`, toString(id))
                 .toString();
-        //TODO Remove
-        console.log(`Destroy SQL: ${query}`);
+
+        if (this.options.verbose) { console.log(`Destroy SQL: ${query}`); }
 
         return new Promise((resolve, reject) => {
             if (this.db) {
@@ -539,8 +540,8 @@ class DSCordovaSQLiteAdapter {
         let query = squel.delete().from(table);
         query = this.__filterQuery(resourceConfig, params, query);
         let queryStr = query.toString();
-        //TODO Remove
-        console.log(`DestroyAll SQL: ${queryStr}`);
+
+        if (this.options.verbose) { console.log(`DestroyAll SQL: ${queryStr}`); }
 
         return new Promise((resolve, reject) => {
             if (this.db) {

@@ -203,7 +203,6 @@ module.exports =
 	                });
 	            } else if (def.type === 'hasMany' && def.localKeys) {
 	                (function () {
-	                    // TODO: Write test for with: hasMany property with localKeys
 	                    var localKeys = [];
 
 	                    if (instance) {
@@ -288,10 +287,12 @@ module.exports =
 	    function DSCordovaSQLiteAdapter(options) {
 	        _classCallCheck(this, DSCordovaSQLiteAdapter);
 
-	        this.defaults = {
+	        var DEFAULT_OPTS = {
 	            name: 'data.db',
-	            location: 'default'
+	            location: 'default',
+	            verbose: false
 	        };
+
 	        options = options || {};
 
 	        if (options.queryOperators) {
@@ -299,7 +300,7 @@ module.exports =
 	            delete options.queryOperators;
 	        }
 
-	        (0, _object.deepMixIn)(this.defaults, options);
+	        this.options = (0, _object.deepMixIn)({}, DEFAULT_OPTS, options);
 
 	        if (window.sqlitePlugin) {
 	            this.db = window.sqlitePlugin.openDatabase({ name: options.name, location: options.location });
@@ -317,8 +318,10 @@ module.exports =
 	            var table = getTable(resourceConfig);
 
 	            var query = _squel2.default.select().from(table).where(table + '.' + resourceConfig.idAttribute + ' = ?', (0, _lang.toString)(id)).toString();
-	            //TODO Remove
-	            console.log('Find SQL: ' + query);
+
+	            if (this.options.verbose) {
+	                console.log('Find SQL: ' + query);
+	            }
 
 	            return new Promise(function (resolve, reject) {
 	                if (_this2.db) {
@@ -367,8 +370,10 @@ module.exports =
 	            var query = _squel2.default.select().from(table);
 	            query = this.__filterQuery(resourceConfig, params, query);
 	            var queryStr = query.toString();
-	            //TODO Remove
-	            console.log('FindAll SQL: ' + queryStr);
+
+	            if (this.options.verbose) {
+	                console.log('FindAll SQL: ' + queryStr);
+	            }
 
 	            return new Promise(function (resolve, reject) {
 	                if (_this3.db) {
@@ -405,8 +410,10 @@ module.exports =
 
 	            var query = _squel2.default.insert().into(table).setFields(attrs).toString();
 	            var selectQuery = _squel2.default.select().from(table).where('ROWID = last_insert_rowid()').toString();
-	            //TODO Remove
-	            console.log('Create SQL: ' + query);
+
+	            if (this.options.verbose) {
+	                console.log('Create SQL: ' + query);
+	            }
 
 	            return new Promise(function (resolve, reject) {
 	                if (_this4.db) {
@@ -462,8 +469,10 @@ module.exports =
 	            var updateQuery = _squel2.default.update().table(table).setFields(attrs).where(table + '.' + resourceConfig.idAttribute + ' = ?', (0, _lang.toString)(id)).toString();
 	            var insertQuery = _squel2.default.insert().into(table).setFields(attrs).toString();
 	            insertQuery = insertQuery.replace('INSERT INTO', 'INSERT OR IGNORE INTO');
-	            //TODO Remove
-	            console.log('Update SQL: ' + updateQuery);
+
+	            if (this.options.verbose) {
+	                console.log('Update SQL: ' + updateQuery);
+	            }
 
 	            return new Promise(function (resolve, reject) {
 	                if (_this5.db) {
@@ -526,8 +535,10 @@ module.exports =
 	                                ids.push(rs.rows.item(i).id.toString());
 	                            }
 	                            var updateQuery = _squel2.default.update().table(table).setFields(attrs).where('ROWID IN ?', ids).toString();
-	                            //TODO Remove
-	                            console.log('UpdateAll SQL: ' + updateQuery);
+
+	                            if (_this6.options.verbose) {
+	                                console.log('UpdateAll SQL: ' + updateQuery);
+	                            }
 
 	                            tx.executeSql(updateQuery, [], function (tx, rs) {
 	                                //Fetch all the rows to return them
@@ -565,8 +576,10 @@ module.exports =
 	            var table = getTable(resourceConfig);
 
 	            var query = _squel2.default.delete().from(table).where(table + '.' + resourceConfig.idAttribute + ' = ?', (0, _lang.toString)(id)).toString();
-	            //TODO Remove
-	            console.log('Destroy SQL: ' + query);
+
+	            if (this.options.verbose) {
+	                console.log('Destroy SQL: ' + query);
+	            }
 
 	            return new Promise(function (resolve, reject) {
 	                if (_this7.db) {
@@ -593,8 +606,10 @@ module.exports =
 	            var query = _squel2.default.delete().from(table);
 	            query = this.__filterQuery(resourceConfig, params, query);
 	            var queryStr = query.toString();
-	            //TODO Remove
-	            console.log('DestroyAll SQL: ' + queryStr);
+
+	            if (this.options.verbose) {
+	                console.log('DestroyAll SQL: ' + queryStr);
+	            }
 
 	            return new Promise(function (resolve, reject) {
 	                if (_this8.db) {
