@@ -491,7 +491,6 @@ class DSCordovaSQLiteAdapter {
                                                     })
                                                     .then((denormalizedItems) => resolve(denormalizedItems));
                                             });
-                                        resolve(rs);
                                     });
                             })
                     },

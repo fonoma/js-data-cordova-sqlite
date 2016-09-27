@@ -556,7 +556,6 @@ module.exports =
 	                                        return resolve(denormalizedItems);
 	                                    });
 	                                });
-	                                resolve(rs);
 	                            });
 	                        });
 	                    }, function (error) {
