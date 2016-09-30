@@ -248,7 +248,7 @@ class DSCordovaSQLiteAdapter {
         let query =
             squel.select()
                 .from(table)
-                .where(`${table}.${resourceConfig.idAttribute} = ?`, toString(id))
+                .where(`${table}.${resourceConfig.idAttribute} = ?`, id)
                 .toString();
 
         if (this.options.verbose) { console.log(`Find SQL: ${query}`); }
@@ -393,7 +393,7 @@ class DSCordovaSQLiteAdapter {
             squel.update()
                 .table(table)
                 .setFields(attrs)
-                .where(`${table}.${resourceConfig.idAttribute} = ?`, toString(id))
+                .where(`${table}.${resourceConfig.idAttribute} = ?`, id)
                 .toString();
         let insertQuery =
             squel.insert()
@@ -510,7 +510,7 @@ class DSCordovaSQLiteAdapter {
         let query =
             squel.delete()
                 .from(table)
-                .where(`${table}.${resourceConfig.idAttribute} = ?`, toString(id))
+                .where(`${table}.${resourceConfig.idAttribute} = ?`, id)
                 .toString();
 
         if (this.options.verbose) { console.log(`Destroy SQL: ${query}`); }
@@ -805,11 +805,6 @@ class DSCordovaSQLiteAdapter {
                 processed[key] = null;
             }
         });
-
-        //Store ids always as strings
-        if (resourceConfig.idAttribute && processed[resourceConfig.idAttribute]) {
-            processed[resourceConfig.idAttribute] = processed[resourceConfig.idAttribute].toString();
-        }
 
         return processed;
     }

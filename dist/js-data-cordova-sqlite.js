@@ -317,7 +317,7 @@ module.exports =
 	            options.with = options.with || [];
 	            var table = getTable(resourceConfig);
 
-	            var query = _squel2.default.select().from(table).where(table + '.' + resourceConfig.idAttribute + ' = ?', (0, _lang.toString)(id)).toString();
+	            var query = _squel2.default.select().from(table).where(table + '.' + resourceConfig.idAttribute + ' = ?', id).toString();
 
 	            if (this.options.verbose) {
 	                console.log('Find SQL: ' + query);
@@ -466,7 +466,7 @@ module.exports =
 	                attrs['id'] = id;
 	            }
 
-	            var updateQuery = _squel2.default.update().table(table).setFields(attrs).where(table + '.' + resourceConfig.idAttribute + ' = ?', (0, _lang.toString)(id)).toString();
+	            var updateQuery = _squel2.default.update().table(table).setFields(attrs).where(table + '.' + resourceConfig.idAttribute + ' = ?', id).toString();
 	            var insertQuery = _squel2.default.insert().into(table).setFields(attrs).toString();
 	            insertQuery = insertQuery.replace('INSERT INTO', 'INSERT OR IGNORE INTO');
 
@@ -574,7 +574,7 @@ module.exports =
 
 	            var table = getTable(resourceConfig);
 
-	            var query = _squel2.default.delete().from(table).where(table + '.' + resourceConfig.idAttribute + ' = ?', (0, _lang.toString)(id)).toString();
+	            var query = _squel2.default.delete().from(table).where(table + '.' + resourceConfig.idAttribute + ' = ?', id).toString();
 
 	            if (this.options.verbose) {
 	                console.log('Destroy SQL: ' + query);
@@ -844,11 +844,6 @@ module.exports =
 	                    processed[key] = null;
 	                }
 	            });
-
-	            //Store ids always as strings
-	            if (resourceConfig.idAttribute && processed[resourceConfig.idAttribute]) {
-	                processed[resourceConfig.idAttribute] = processed[resourceConfig.idAttribute].toString();
-	            }
 
 	            return processed;
 	        }
