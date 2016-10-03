@@ -454,6 +454,7 @@ class DSCordovaSQLiteAdapter {
         let query = squel.select().from(table).field('ROWID');
         query = this.__filterQuery(resourceConfig, params, query);
         let queryStr = query.toString();
+        console.log(`UpdateAll Select SQL: ${queryStr}`);
 
         return new Promise((resolve, reject) => {
             if (this.db) {
