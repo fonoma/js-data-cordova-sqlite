@@ -331,14 +331,14 @@ class DSCordovaSQLiteAdapter {
             squel.insert()
                 .into(table)
                 .setFields(attrs)
-                .toString();
+                .toParam();
         let selectQuery =
             squel.select()
                 .from(table)
                 .where('ROWID = last_insert_rowid()')
                 .toString();
 
-        if (this.options.verbose) { console.log(`Create SQL: ${query}`); }
+        if (this.options.verbose) { console.log(`Create SQL: ${query.text}, values: [${query.values}]`); }
 
         return new Promise((resolve, reject) => {
             if (this.db) {
@@ -358,7 +358,7 @@ class DSCordovaSQLiteAdapter {
                                 let alterQuery = `ALTER TABLE ${table} ADD COLUMN ${columnName}; REINDEX ${table}`;
                                 tx.executeSql(alterQuery, [], (tx, rs)=> {
                                     //Try again to insert and retrieve the row
-                                    tx.executeSql(query, [], (tx, rs)=> {
+                                    tx.executeSql(query.text, query.values, (tx, rs)=> {
                                         tx.executeSql(selectQuery, [], successCallback);
                                     }, errorCallback);
                                 });
@@ -367,7 +367,7 @@ class DSCordovaSQLiteAdapter {
                         };
 
                         this.__createTable(resourceConfig, attrs, tx);
-                        tx.executeSql(query, [],
+                        tx.executeSql(query.text, query.values,
                             (tx, rs) => {
                                 tx.executeSql(selectQuery, [], successCallback);
                             }, errorCallback);
@@ -394,15 +394,15 @@ class DSCordovaSQLiteAdapter {
                 .table(table)
                 .setFields(attrs)
                 .where(`${table}.${resourceConfig.idAttribute} = ?`, id)
-                .toString();
+                .toParam();
         let insertQuery =
             squel.insert()
                 .into(table)
                 .setFields(attrs)
-                .toString();
-        insertQuery = insertQuery.replace('INSERT INTO', 'INSERT OR IGNORE INTO');
+                .toParam();
+        insertQuery.text = insertQuery.text.replace('INSERT INTO', 'INSERT OR IGNORE INTO');
 
-        if (this.options.verbose) { console.log(`Update SQL: ${updateQuery}`); }
+        if (this.options.verbose) { console.log(`Update SQL: ${updateQuery.text}, values: [${updateQuery.values}]`); }
 
         return new Promise((resolve, reject) => {
             if (this.db) {
@@ -420,8 +420,8 @@ class DSCordovaSQLiteAdapter {
                                 let alterQuery = `ALTER TABLE ${table} ADD COLUMN ${columnName}`;
                                 tx.executeSql(alterQuery, [], (tx, rs) => {
                                     //Try again to update/insert and retrieve the row
-                                    tx.executeSql(updateQuery, [], (tx, rs)=> {
-                                        tx.executeSql(insertQuery, [], successCallback, errorCallback);
+                                    tx.executeSql(updateQuery.text, updateQuery.values, (tx, rs)=> {
+                                        tx.executeSql(insertQuery.text, insertQuery.values, successCallback, errorCallback);
                                     }, errorCallback);
                                 });
                             }
@@ -430,10 +430,10 @@ class DSCordovaSQLiteAdapter {
 
                         this.__createTable(resourceConfig, attrs, tx);
                         //Try to update an existing row
-                        tx.executeSql(updateQuery, [],
+                        tx.executeSql(updateQuery.text, updateQuery.values,
                             (tx, rs) => {
                                 //Try to insert the row if the update didn't happen
-                                tx.executeSql(insertQuery, [], successCallback);
+                                tx.executeSql(insertQuery.text, insertQuery.values, successCallback);
                             }, errorCallback);
                     },
                     (error) => {
@@ -468,11 +468,11 @@ class DSCordovaSQLiteAdapter {
                                                     .table(table)
                                                     .setFields(attrs)
                                                     .where('ROWID IN ?', ids)
-                                                    .toString();
+                                                    .toParam();
 
-                                if (this.options.verbose) { console.log(`UpdateAll SQL: ${updateQuery}`); }
+                                if (this.options.verbose) { console.log(`UpdateAll SQL: ${updateQuery.text}, values: [${updateQuery.values}]`); }
 
-                                tx.executeSql(updateQuery, [],
+                                tx.executeSql(updateQuery.text, updateQuery.values,
                                     (tx, rs) => {
                                         //Fetch all the rows to return them
                                         let selectQuery = squel.select()

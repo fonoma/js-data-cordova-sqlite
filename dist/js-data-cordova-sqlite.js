@@ -408,11 +408,11 @@ module.exports =
 	            var table = getTable(resourceConfig);
 	            attrs = this.__normalizeAttributes(resourceConfig, attrs);
 
-	            var query = _squel2.default.insert().into(table).setFields(attrs).toString();
+	            var query = _squel2.default.insert().into(table).setFields(attrs).toParam();
 	            var selectQuery = _squel2.default.select().from(table).where('ROWID = last_insert_rowid()').toString();
 
 	            if (this.options.verbose) {
-	                console.log('Create SQL: ' + query);
+	                console.log('Create SQL: ' + query.text + ', values: [' + query.values + ']');
 	            }
 
 	            return new Promise(function (resolve, reject) {
@@ -434,7 +434,7 @@ module.exports =
 	                                var alterQuery = 'ALTER TABLE ' + table + ' ADD COLUMN ' + columnName + '; REINDEX ' + table;
 	                                tx.executeSql(alterQuery, [], function (tx, rs) {
 	                                    //Try again to insert and retrieve the row
-	                                    tx.executeSql(query, [], function (tx, rs) {
+	                                    tx.executeSql(query.text, query.values, function (tx, rs) {
 	                                        tx.executeSql(selectQuery, [], successCallback);
 	                                    }, errorCallback);
 	                                });
@@ -443,7 +443,7 @@ module.exports =
 	                        };
 
 	                        _this4.__createTable(resourceConfig, attrs, tx);
-	                        tx.executeSql(query, [], function (tx, rs) {
+	                        tx.executeSql(query.text, query.values, function (tx, rs) {
 	                            tx.executeSql(selectQuery, [], successCallback);
 	                        }, errorCallback);
 	                    }, function (error) {
@@ -466,12 +466,12 @@ module.exports =
 	                attrs['id'] = id;
 	            }
 
-	            var updateQuery = _squel2.default.update().table(table).setFields(attrs).where(table + '.' + resourceConfig.idAttribute + ' = ?', id).toString();
-	            var insertQuery = _squel2.default.insert().into(table).setFields(attrs).toString();
-	            insertQuery = insertQuery.replace('INSERT INTO', 'INSERT OR IGNORE INTO');
+	            var updateQuery = _squel2.default.update().table(table).setFields(attrs).where(table + '.' + resourceConfig.idAttribute + ' = ?', id).toParam();
+	            var insertQuery = _squel2.default.insert().into(table).setFields(attrs).toParam();
+	            insertQuery.text = insertQuery.text.replace('INSERT INTO', 'INSERT OR IGNORE INTO');
 
 	            if (this.options.verbose) {
-	                console.log('Update SQL: ' + updateQuery);
+	                console.log('Update SQL: ' + updateQuery.text + ', values: [' + updateQuery.values + ']');
 	            }
 
 	            return new Promise(function (resolve, reject) {
@@ -490,8 +490,8 @@ module.exports =
 	                                var alterQuery = 'ALTER TABLE ' + table + ' ADD COLUMN ' + columnName;
 	                                tx.executeSql(alterQuery, [], function (tx, rs) {
 	                                    //Try again to update/insert and retrieve the row
-	                                    tx.executeSql(updateQuery, [], function (tx, rs) {
-	                                        tx.executeSql(insertQuery, [], successCallback, errorCallback);
+	                                    tx.executeSql(updateQuery.text, updateQuery.values, function (tx, rs) {
+	                                        tx.executeSql(insertQuery.text, insertQuery.values, successCallback, errorCallback);
 	                                    }, errorCallback);
 	                                });
 	                            }
@@ -500,9 +500,9 @@ module.exports =
 
 	                        _this5.__createTable(resourceConfig, attrs, tx);
 	                        //Try to update an existing row
-	                        tx.executeSql(updateQuery, [], function (tx, rs) {
+	                        tx.executeSql(updateQuery.text, updateQuery.values, function (tx, rs) {
 	                            //Try to insert the row if the update didn't happen
-	                            tx.executeSql(insertQuery, [], successCallback);
+	                            tx.executeSql(insertQuery.text, insertQuery.values, successCallback);
 	                        }, errorCallback);
 	                    }, function (error) {
 	                        reject(new Error(error.message));
@@ -534,13 +534,13 @@ module.exports =
 	                            for (var i = 0; i < rs.rows.length; i++) {
 	                                ids.push(rs.rows.item(i).id.toString());
 	                            }
-	                            var updateQuery = _squel2.default.update().table(table).setFields(attrs).where('ROWID IN ?', ids).toString();
+	                            var updateQuery = _squel2.default.update().table(table).setFields(attrs).where('ROWID IN ?', ids).toParam();
 
 	                            if (_this6.options.verbose) {
-	                                console.log('UpdateAll SQL: ' + updateQuery);
+	                                console.log('UpdateAll SQL: ' + updateQuery.text + ', values: [' + updateQuery.values + ']');
 	                            }
 
-	                            tx.executeSql(updateQuery, [], function (tx, rs) {
+	                            tx.executeSql(updateQuery.text, updateQuery.values, function (tx, rs) {
 	                                //Fetch all the rows to return them
 	                                var selectQuery = _squel2.default.select().from(table).where('ROWID IN ?', ids).toString();
 	                                tx.executeSql(selectQuery, [], function (tx, rs) {

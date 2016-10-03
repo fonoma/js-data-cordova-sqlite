@@ -1,6 +1,6 @@
 {
   "name": "js-data-cordova-sqlite",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Cordova SQLite3 adapter for js-data.",
   "scripts": {
     "lint": "standard src/index.js",
