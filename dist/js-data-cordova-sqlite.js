@@ -525,7 +525,6 @@ module.exports =
 	            var query = _squel2.default.select().from(table).field('ROWID');
 	            query = this.__filterQuery(resourceConfig, params, query);
 	            var queryStr = query.toString();
-	            console.log('UpdateAll Select SQL: ' + queryStr);
 
 	            return new Promise(function (resolve, reject) {
 	                if (_this6.db) {
