@@ -801,8 +801,8 @@ class DSCordovaSQLiteAdapter {
             let value = processed[key];
             if (typeof value === 'boolean' || typeof value === 'object' || Array.isArray(value)) {
                 processed[key] = JSON.stringify(value);
-            } else if (value === undefined) {
-                processed[key] = null;
+            } else if (value === undefined || value === null) {
+                delete processed[key];
             }
         });
 
