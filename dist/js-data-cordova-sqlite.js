@@ -833,6 +833,7 @@ module.exports =
 	    }, {
 	        key: '__normalizeAttributes',
 	        value: function __normalizeAttributes(resourceConfig, attrs) {
+	            var attrsToOmit = [];
 	            var processed = (0, _object.deepMixIn)({}, attrs);
 	            processed = removeCircular((0, _object.omit)(processed, resourceConfig.relationFields || []));
 
@@ -841,9 +842,11 @@ module.exports =
 	                if (typeof value === 'boolean' || (typeof value === 'undefined' ? 'undefined' : _typeof(value)) === 'object' || Array.isArray(value)) {
 	                    processed[key] = JSON.stringify(value);
 	                } else if (value === undefined || value === null) {
-	                    processed[key] = null;
+	                    attrsToOmit.push(key);
 	                }
 	            });
+
+	            processed = (0, _object.omit)(processed, attrsToOmit);
 
 	            return processed;
 	        }

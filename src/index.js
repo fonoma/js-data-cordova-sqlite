@@ -794,6 +794,7 @@ class DSCordovaSQLiteAdapter {
     }
 
     __normalizeAttributes(resourceConfig, attrs) {
+        let attrsToOmit = [];
         let processed = deepMixIn({}, attrs);
         processed = removeCircular(omit(processed, resourceConfig.relationFields || []));
 
@@ -802,9 +803,11 @@ class DSCordovaSQLiteAdapter {
             if (typeof value === 'boolean' || typeof value === 'object' || Array.isArray(value)) {
                 processed[key] = JSON.stringify(value);
             } else if (value === undefined || value === null) {
-                processed[key] = null;
+                attrsToOmit.push(key);
             }
         });
+
+        processed= omit(processed, attrsToOmit);
 
         return processed;
     }
