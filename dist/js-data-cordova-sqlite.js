@@ -841,7 +841,7 @@ module.exports =
 	                if (typeof value === 'boolean' || (typeof value === 'undefined' ? 'undefined' : _typeof(value)) === 'object' || Array.isArray(value)) {
 	                    processed[key] = JSON.stringify(value);
 	                } else if (value === undefined || value === null) {
-	                    delete processed[key];
+	                    processed[key] = null;
 	                }
 	            });
 
