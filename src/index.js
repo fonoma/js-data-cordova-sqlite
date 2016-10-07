@@ -802,12 +802,12 @@ class DSCordovaSQLiteAdapter {
             let value = processed[key];
             if (typeof value === 'boolean' || typeof value === 'object' || Array.isArray(value)) {
                 processed[key] = JSON.stringify(value);
-            } else if (value === undefined || value === null) {
+            } else if (value === undefined || value === null || value === 'null') {
                 attrsToOmit.push(key);
             }
         });
 
-        processed= omit(processed, attrsToOmit);
+        processed = omit(processed, attrsToOmit);
 
         return processed;
     }
