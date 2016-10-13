@@ -833,20 +833,15 @@ module.exports =
 	    }, {
 	        key: '__normalizeAttributes',
 	        value: function __normalizeAttributes(resourceConfig, attrs) {
-	            var attrsToOmit = [];
 	            var processed = (0, _object.deepMixIn)({}, attrs);
 	            processed = removeCircular((0, _object.omit)(processed, resourceConfig.relationFields || []));
 
 	            Object.keys(processed).forEach(function (key) {
 	                var value = processed[key];
-	                if (typeof value === 'boolean' || (typeof value === 'undefined' ? 'undefined' : _typeof(value)) === 'object' || Array.isArray(value)) {
+	                if (value !== null && (typeof value === 'boolean' || (typeof value === 'undefined' ? 'undefined' : _typeof(value)) === 'object' || Array.isArray(value))) {
 	                    processed[key] = JSON.stringify(value);
-	                } else if (value === undefined || value === null || value === 'null') {
-	                    attrsToOmit.push(key);
 	                }
 	            });
-
-	            processed = (0, _object.omit)(processed, attrsToOmit);
 
 	            return processed;
 	        }
