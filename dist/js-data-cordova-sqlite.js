@@ -47,7 +47,7 @@ module.exports =
 
 	'use strict';
 
-	var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
+	var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
 
 	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
@@ -93,12 +93,9 @@ module.exports =
 
 	        var _localResourceConfig$ = localResourceConfig.relationList.filter(function (r) {
 	            return r.relation === relationName || r.localField === relationName;
-	        });
-
-	        var _localResourceConfig$2 = _slicedToArray(_localResourceConfig$, 1);
-
-	        var relation = _localResourceConfig$2[0];
-
+	        }),
+	            _localResourceConfig$2 = _slicedToArray(_localResourceConfig$, 1),
+	            relation = _localResourceConfig$2[0];
 
 	        if (relation) {
 	            var relationResourceConfig = resourceConfig.getResource(relation.relation);
@@ -202,43 +199,41 @@ module.exports =
 	                    return relatedItems;
 	                });
 	            } else if (def.type === 'hasMany' && def.localKeys) {
-	                (function () {
-	                    var localKeys = [];
+	                var localKeys = [];
 
-	                    if (instance) {
-	                        var itemKeys = instance[def.localKeys] || [];
+	                if (instance) {
+	                    var itemKeys = instance[def.localKeys] || [];
+	                    itemKeys = Array.isArray(itemKeys) ? itemKeys : Object.keys(itemKeys);
+	                    localKeys = localKeys.concat(itemKeys || []);
+	                } else {
+	                    items.forEach(function (item) {
+	                        var itemKeys = item[def.localKeys] || [];
 	                        itemKeys = Array.isArray(itemKeys) ? itemKeys : Object.keys(itemKeys);
 	                        localKeys = localKeys.concat(itemKeys || []);
+	                    });
+	                }
+
+	                task = _this.findAll(resourceConfig.getResource(relationName), {
+	                    where: _defineProperty({}, relationDef.idAttribute, {
+	                        'in': filter((0, _array.unique)(localKeys), function (x) {
+	                            return x;
+	                        })
+	                    })
+	                }, __options).then(function (relatedItems) {
+	                    if (instance) {
+	                        instance[def.localField] = relatedItems;
 	                    } else {
 	                        items.forEach(function (item) {
 	                            var itemKeys = item[def.localKeys] || [];
-	                            itemKeys = Array.isArray(itemKeys) ? itemKeys : Object.keys(itemKeys);
-	                            localKeys = localKeys.concat(itemKeys || []);
+	                            var attached = relatedItems.filter(function (ri) {
+	                                return itemKeys && (0, _array.contains)(itemKeys, ri[relationDef.idAttribute]);
+	                            });
+	                            item[def.localField] = attached;
 	                        });
 	                    }
 
-	                    task = _this.findAll(resourceConfig.getResource(relationName), {
-	                        where: _defineProperty({}, relationDef.idAttribute, {
-	                            'in': filter((0, _array.unique)(localKeys), function (x) {
-	                                return x;
-	                            })
-	                        })
-	                    }, __options).then(function (relatedItems) {
-	                        if (instance) {
-	                            instance[def.localField] = relatedItems;
-	                        } else {
-	                            items.forEach(function (item) {
-	                                var itemKeys = item[def.localKeys] || [];
-	                                var attached = relatedItems.filter(function (ri) {
-	                                    return itemKeys && (0, _array.contains)(itemKeys, ri[relationDef.idAttribute]);
-	                                });
-	                                item[def.localField] = attached;
-	                            });
-	                        }
-
-	                        return relatedItems;
-	                    });
-	                })();
+	                    return relatedItems;
+	                });
 	            } else if (def.type === 'belongsTo' || def.type === 'hasOne' && def.localKey) {
 	                if (instance) {
 	                    var id = (0, _object.get)(instance, def.localKey);
@@ -325,33 +320,31 @@ module.exports =
 
 	            return new Promise(function (resolve, reject) {
 	                if (_this2.db) {
-	                    (function () {
-	                        var successCallback = function successCallback(tx, rs) {
-	                            if (rs.rows.length < 1) {
-	                                reject(new Error('Not Found!'));
-	                            } else {
-	                                instance = rs.rows.item(0);
-	                                return loadWithRelations.call(_this2, instance, resourceConfig, options).then(function () {
-	                                    return _this2.__denormalizeAttributes(instance);
-	                                }).then(function (item) {
-	                                    return resolve(item);
-	                                });
-	                            }
-	                        };
-	                        var errorCallback = function errorCallback(tx, error) {
-	                            reject(new Error(error.message));
-	                            return false;
-	                        };
-
-	                        //Use current transaction if it exists
-	                        if (tx) {
-	                            tx.executeSql(query, [], successCallback, errorCallback);
+	                    var successCallback = function successCallback(tx, rs) {
+	                        if (rs.rows.length < 1) {
+	                            reject(new Error('Not Found!'));
 	                        } else {
-	                            _this2.db.transaction(function (tx) {
-	                                tx.executeSql(query, [], successCallback, errorCallback);
+	                            instance = rs.rows.item(0);
+	                            return loadWithRelations.call(_this2, instance, resourceConfig, options).then(function () {
+	                                return _this2.__denormalizeAttributes(instance);
+	                            }).then(function (item) {
+	                                return resolve(item);
 	                            });
 	                        }
-	                    })();
+	                    };
+	                    var errorCallback = function errorCallback(tx, error) {
+	                        reject(new Error(error.message));
+	                        return false;
+	                    };
+
+	                    //Use current transaction if it exists
+	                    if (tx) {
+	                        tx.executeSql(query, [], successCallback, errorCallback);
+	                    } else {
+	                        _this2.db.transaction(function (tx) {
+	                            tx.executeSql(query, [], successCallback, errorCallback);
+	                        });
+	                    }
 	                } else {
 	                    reject(new Error('Cordova SQLite plugin is not loaded!'));
 	                }
@@ -443,6 +436,9 @@ module.exports =
 	                        };
 
 	                        _this4.__createTable(resourceConfig, attrs, tx);
+	                        if ((options || {}).returnQueryOnly) {
+	                            return resolve(query); // Don't execute the query, return it instead
+	                        }
 	                        tx.executeSql(query.text, query.values, function (tx, rs) {
 	                            tx.executeSql(selectQuery, [], successCallback);
 	                        }, errorCallback);
@@ -499,6 +495,9 @@ module.exports =
 	                        };
 
 	                        _this5.__createTable(resourceConfig, attrs, tx);
+	                        if ((options || {}).returnQueryOnly) {
+	                            return resolve(updateQuery); // Don't execute the query, return it instead
+	                        }
 	                        //Try to update an existing row
 	                        tx.executeSql(updateQuery.text, updateQuery.values, function (tx, rs) {
 	                            //Try to insert the row if the update didn't happen
@@ -581,6 +580,10 @@ module.exports =
 	            }
 
 	            return new Promise(function (resolve, reject) {
+	                // Don't execute the query, return it instead
+	                if ((options || {}).returnQueryOnly) {
+	                    return resolve({ text: query });
+	                }
 	                if (_this7.db) {
 	                    _this7.db.transaction(function (tx) {
 	                        tx.executeSql(query, [], function (tx, rs) {

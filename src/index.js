@@ -367,6 +367,9 @@ class DSCordovaSQLiteAdapter {
                         };
 
                         this.__createTable(resourceConfig, attrs, tx);
+                        if((options || {}).returnQueryOnly){
+                          return resolve(query); // Don't execute the query, return it instead
+                        }
                         tx.executeSql(query.text, query.values,
                             (tx, rs) => {
                                 tx.executeSql(selectQuery, [], successCallback);
@@ -429,6 +432,9 @@ class DSCordovaSQLiteAdapter {
                         };
 
                         this.__createTable(resourceConfig, attrs, tx);
+                        if((options || {}).returnQueryOnly){
+                          return resolve(updateQuery); // Don't execute the query, return it instead
+                        }
                         //Try to update an existing row
                         tx.executeSql(updateQuery.text, updateQuery.values,
                             (tx, rs) => {
@@ -516,6 +522,10 @@ class DSCordovaSQLiteAdapter {
         if (this.options.verbose) { console.log(`Destroy SQL: ${query}`); }
 
         return new Promise((resolve, reject) => {
+            // Don't execute the query, return it instead
+            if((options || {}).returnQueryOnly){
+                return resolve({text: query});
+            }
             if (this.db) {
                 this.db.transaction((tx) => {
                     tx.executeSql(query, [],
